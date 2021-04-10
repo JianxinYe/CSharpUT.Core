@@ -7,6 +7,18 @@ namespace HolidayTests
     [TestFixture]
     public class AuthenticationServiceTests
     {
+        private IProfile _profile;
+        private IToken _token;
+        private AuthenticationService _target;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _profile = Substitute.For<IProfile>();
+            _token = Substitute.For<IToken>();
+            _target = new AuthenticationService(_profile, _token);
+        }
+
         [Test()]
         public void is_valid()
         {
@@ -16,21 +28,39 @@ namespace HolidayTests
             //var token = new FakeToken();
             //var target = new AuthenticationService(profile, token);
 
-            var profile = Substitute.For<IProfile>();
-            profile.GetPassword("joey").Returns("91");
-
-            var token = Substitute.For<IToken>();
-            token.GetRandom("").ReturnsForAnyArgs("000000");
-            var target = new AuthenticationService(profile, token);
-
-            var actual = target.IsValid("joey", "91000000");
-
-            //always failed
-            Assert.IsTrue(actual);
+            GivenPassword("joey", "91");
+            GivenToken("000000");
+            ShouldBeValid("joey", "91000000");
+        }
+        [Test()]
+        public void is_invalid()
+        {
+            GivenPassword("joey", "91");
+            GivenToken("000000");
+            ShouldBeInvalid("joey", "wrong password");
         }
 
-
+        private void ShouldBeValid(string account, string password)
+        {
+            var actual = _target.IsValid(account, password);
+            Assert.IsTrue(actual);
+        }
         
+        private void ShouldBeInvalid(string account, string password)
+        {
+            var actual = _target.IsValid(account, password);
+            Assert.IsFalse(actual);
+        }
+
+        private void GivenToken(string token)
+        {
+            _token.GetRandom("").ReturnsForAnyArgs(token);
+        }
+
+        private void GivenPassword(string account, string password)
+        {
+            _profile.GetPassword(account).Returns(password);
+        }
 
         public class FakeProfile : IProfile
         {
