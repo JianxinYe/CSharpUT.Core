@@ -7,11 +7,21 @@ namespace Lib
     {
         private IProfile _profile;
         private IToken _token;
+        private ILogger _notification;
+        private readonly ILogger _log;
 
-        public AuthenticationService(IProfile profile, IToken token)
+        public AuthenticationService(IProfile profile, IToken token, ILogger notification)
         {
             _profile = profile;
             _token = token;
+            _notification = notification;
+        }
+
+        public AuthenticationService(ILogger log)
+        {
+            _log = log;
+            _profile = new ProfileDao();
+            _token = new RsaTokenDao();
         }
 
         public AuthenticationService()
@@ -39,9 +49,15 @@ namespace Lib
             }
             else
             {
+                _notification.Notify($"account:{account} try to login failed");
                 return false;
             }
         }
+    }
+
+    public interface ILogger
+    {
+        string Notify(string account);
     }
 
     public interface IProfile

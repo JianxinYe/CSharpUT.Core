@@ -10,13 +10,16 @@ namespace HolidayTests
         private IProfile _profile;
         private IToken _token;
         private AuthenticationService _target;
+        private ILogger _logger;
 
         [SetUp]
         public void SetUp()
         {
             _profile = Substitute.For<IProfile>();
             _token = Substitute.For<IToken>();
-            _target = new AuthenticationService(_profile, _token);
+            _logger = Substitute.For<ILogger>();
+
+            _target = new AuthenticationService(_profile, _token, _logger);
         }
 
         [Test()]
@@ -32,12 +35,42 @@ namespace HolidayTests
             GivenToken("000000");
             ShouldBeValid("joey", "91000000");
         }
+
         [Test()]
         public void is_invalid()
         {
             GivenPassword("joey", "91");
             GivenToken("000000");
             ShouldBeInvalid("joey", "wrong password");
+        }
+
+        [Test]
+        public void should_log_account_when_invalid()
+        {
+            WhenInvalid("joey", "wrong password");
+            ShouldLog("joey");
+        }
+
+
+        [Test]
+        public void should_log_account_when_valid()
+        {
+            WhenInvalid("joey", "91");
+            ShouldLog("joey");
+        }
+
+        private void ShouldLog(string account)
+        {
+            // ¦³ª¬ªp
+            _logger.Received(1)
+                .Notify(Arg.Is<string>(m => m.Contains(account) && m.Contains("")));
+        }
+
+        private void WhenInvalid(string account, string password)
+        {
+            GivenPassword(account, "91");
+            GivenToken("000000");
+            _target.IsValid(account, password);
         }
 
         private void ShouldBeValid(string account, string password)
@@ -47,6 +80,12 @@ namespace HolidayTests
         }
         
         private void ShouldBeInvalid(string account, string password)
+        {
+            var actual = _target.IsValid(account, password);
+            Assert.IsFalse(actual);
+        }
+
+        private void ShouldBeInvalidNotification(string account, string password)
         {
             var actual = _target.IsValid(account, password);
             Assert.IsFalse(actual);
